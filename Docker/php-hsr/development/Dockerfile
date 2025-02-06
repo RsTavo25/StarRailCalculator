@@ -22,7 +22,7 @@ RUN echo "America/Argentina/Buenos_Aires" > /etc/timezone
 RUN docker-php-ext-install gd zip pdo pdo_mysql soap xml mysqli
 
 #php ini
-COPY ./Docker/php-fpm/php.ini /usr/local/etc/php/conf.d/99-app.ini
+COPY ./Docker/php-hsr/php.ini /usr/local/etc/php/conf.d/99-app.ini
 #xdebug ini
 #COPY ./Docker/php-fpm/xdebug.ini /usr/local/etc/php/conf.d/99-xdebug.ini
 
@@ -33,15 +33,17 @@ RUN php -r "unlink('composer-setup.php');"
 
 #Copying files
 WORKDIR /var/www/html/
-COPY ./ /var/www/html/
+COPY .. /var/www/html/
 
 #Installing project dependences
-RUN composer install; \
-    php artisan l5-swagger:generate
-
-COPY ./Docker/php-fpm/development/entrypoint.sh /tmp
-RUN chmod ugo+rwx /tmp/entrypoint.sh
+#RUN composer install; \
+#    php artisan l5-swagger:generate
 
 EXPOSE 9000
 
-ENTRYPOINT ["/tmp/entrypoint.sh"]
+RUN cd /var/www/html/
+# #Running migrations see https://laravel.com/docs/9.x/migrations#forcing-migrations-to-run-in-production
+#php artisan migrate
+RUN chmod 777 -R storage
+RUN chmod 777 -R vendor
+#RUN php artisan app:register-microservice-routes
