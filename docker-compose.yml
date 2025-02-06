@@ -1,0 +1,60 @@
+services:
+#    db:
+#        image: mysql:latest
+#        environment:
+#            MYSQL_ROOT_PASSWORD: root
+#            MYSQL_DATABASE: hsr_calc
+#        ports:
+#            - 3306:3306
+
+    php-hsr:
+        build:
+            context: ./
+            dockerfile: ./Docker/php-hsr/development/Dockerfile
+        environment:
+            - XDEBUG_CONFIG=client_host=host.docker.internal
+        networks:
+            - php
+        volumes:
+            - ./:/var/www/html/
+            - data-hsr:${OBS_PATH}
+        working_dir: /var/www/html/
+        deploy:
+            resources:
+                limits:
+                    cpus: "1"
+                    memory: 1g
+        user: 1000:1000
+
+    apache-hsr:
+        build:
+            context: ./
+            dockerfile: ./Docker/apache/Dockerfile
+        environment:
+            - PHP_HSR_SERVICE=php-hsr
+        depends_on:
+            - php-hsr
+        networks:
+            - apache
+            - php
+        ports:
+            - "8003:80"
+        volumes:
+            - ./:/var/www/html/
+            - data-hsr:${OBS_PATH}/
+        command: >
+            sh -c "chmod ugo+rwx -R /data-hsr &&
+                chmod ugo+rwx -R /var/www/html/storage/ &&
+                httpd-foreground"
+        deploy:
+            resources:
+               limits:
+                   cpus: "0.25"
+                   memory: 64M
+
+volumes:
+    data-hsr:
+
+networks:
+    apache:
+    php:
